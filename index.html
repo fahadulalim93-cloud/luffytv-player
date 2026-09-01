@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuffyTV - Watch Anime Free</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏴‍☠️%3C/text%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #000;
+    --surface: #0a0a0a;
+    --surface-2: #141414;
+    --surface-3: #1c1c1c;
+    --border: #262626;
+    --text: #fff;
+    --text-2: #9ca3af;
+    --text-3: #6b7280;
+    --accent: #FF4D6A;
+    --cyan: #00E5FF;
+    --purple: #A855F7;
+    --green: #22c55e;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+  }
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-decoration: none;
+  }
+  .nav { margin-left: 32px; display: flex; gap: 24px; }
+  .nav a { color: var(--text-2); text-decoration: none; font-size: 14px; font-weight: 500; }
+  .nav a:hover { color: var(--text); }
+  .search-box {
+    margin-left: auto;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: var(--text);
+    width: 300px;
+    font-size: 14px;
+  }
+  .search-box:focus { outline: none; border-color: var(--accent); }
+  /* Main */
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  .watch-page { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+  @media (max-width: 1024px) { .watch-page { grid-template-columns: 1fr; } }
+
+  /* Player */
+  .player-wrap {
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    position: relative;
+    aspect-ratio: 16/9;
+  }
+  #video {
+    width: 100%; height: 100%;
+    background: #000;
+  }
+  .player-loading {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+    background: rgba(0,0,0,0.8);
+    color: var(--text-2);
+    z-index: 10;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--surface-3);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .player-error {
+    position: absolute; inset: 0;
+    display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px;
+    background: rgba(0,0,0,0.9);
+    color: var(--accent);
+    z-index: 10;
+    text-align: center;
+    padding: 24px;
+  }
+  /* Episode info (left bottom) */
+  .episode-info {
+    padding: 20px 0;
+  }
+  .you-are-watching {
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .episode-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .episode-helper {
+    color: var(--text-2);
+    font-size: 14px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .current-server-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  .current-server-badge .label { color: var(--text-3); }
+  .current-server-badge .sep { color: var(--text-3); margin: 0 4px; }
+  .current-server-badge .name { color: var(--text); font-weight: 600; }
+  /* Server panel (right side) */
+  .server-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    align-self: start;
+    position: sticky;
+    top: 80px;
+  }
+  /* Sub/Dub toggle */
+  .lang-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    background: var(--surface-2);
+    padding: 4px;
+    border-radius: 10px;
+  }
+  .lang-btn {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    color: var(--text-3);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .lang-btn.active {
+    background: var(--text);
+    color: var(--bg);
+  }
+  .lang-btn:hover:not(.active) { color: var(--text); }
+  /* Server section */
+  .server-section { margin-bottom: 20px; }
+  .section-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .section-icon { font-size: 16px; }
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .section-title.hls { color: var(--cyan); }
+  .section-title.embed { color: var(--purple); }
+  .server-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 480px) { .server-grid { grid-template-columns: repeat(3, 1fr); } }
+  .server-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .server-btn:hover {
+    background: var(--surface-3);
+    border-color: var(--text-3);
+  }
+  .server-btn.active {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+  .server-btn.loading {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .server-btn::after {
+    content: "";
+    display: block;
+    width: 6px;
+    height: 6px;
+    margin: 4px auto 0;
+    border-radius: 50%;
+    background: var(--green);
+    opacity: 0;
+  }
+  .server-btn.active::after { opacity: 1; }
+  .panel-footer {
+    color: var(--text-3);
+    font-size: 12px;
+    margin-top: 12px;
+    text-align: center;
+  }
+  /* Episode list */
+  .episodes-section { margin-top: 32px; }
+  .episodes-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .episodes-header h2 { font-size: 18px; font-weight: 700; }
+  .episodes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+  .episodes-grid::-webkit-scrollbar { width: 6px; }
+  .episodes-grid::-webkit-scrollbar-track { background: var(--surface); }
+  .episodes-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .episode-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .episode-btn:hover {
+    background: var(--surface-3);
+    border-color: var(--accent);
+  }
+  .episode-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  /* Loading states */
+  .page-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    color: var(--text-2);
+    flex-direction: column;
+    gap: 16px;
+  }
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-size: 14px;
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--accent); }
+</style>
+</head>
+<body>
+  <header class="header">
+    <a href="/" class="logo">🏴‍☠️ LuffyTV</a>
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/anime">Anime</a>
+      <a href="/recent">Recent</a>
+      <a href="/popular">Popular</a>
+    </nav>
+    <input class="search-box" id="searchInput" placeholder="Search anime..." />
+  </header>
+
+  <main class="container">
+    <div id="pageContent">
+      <div class="page-loader">
+        <div class="spinner"></div>
+        <p>Loading anime...</p>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+// The LuffyTV anime-stream-api base URL.
+// When hosted on luffytv.live, set this to https://api.luffytv.live
+// For testing, use the VPS IP: http://169.58.120.196:8080
+const API_BASE = window.LUFFYTV_API || 'https://api.luffytv.live';
+
+// ============================================================
+// SERVER NAME MAPPING (raw API name → pretty display name)
+// Pretty names inspired by anime streaming aggregators
+// ============================================================
+const SERVER_DISPLAY_NAMES = {
+  // HLS providers (megaplay.buzz — direct m3u8 streams)
+  'Vidstream-2': 'Koto',
+  'HD-1':        'Aegis',
+  'HD-2':        'Rin',
+  // EMBED providers (vidtube.site — iframe-based, used as fallback)
+  'VidPlay-1':   'Neko',
+  'VidPlay-2':   'Aris',
+  'VidPlay-3':   'Peris',
+  // Generic fallbacks
+  'default':     'Server',
+};
+
+function prettyName(rawName) {
+  return SERVER_DISPLAY_NAMES[rawName] || rawName;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let currentPlayer = null;  // HLS.js instance
+let currentServerId = null;
+let currentLang = 'sub';   // 'sub' or 'dub'
+let currentAnimeSlug = null;
+let currentEpisode = null;
+let episodesList = [];
+let allServers = [];  // all servers for current episode
+
+// ============================================================
+// ROUTING
+// ============================================================
+function getRoute() {
+  const path = window.location.pathname;
+  // /watch/{slug}/{episode}
+  const m = path.match(/^\/watch\/([^/]+)\/(\d+)$/);
+  if (m) return { type: 'watch', slug: m[1], episode: parseInt(m[2]) };
+  return { type: 'home' };
+}
+
+// ============================================================
+// API CALLS
+// ============================================================
+async function apiGet(path) {
+  const url = `${API_BASE}${path}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`API ${r.status}: ${path}`);
+  return r.json();
+}
+
+async function fetchFullPipeline(slug, episode, preferredType = 'sub') {
+  const url = `/full/${slug}/${episode}?preferred_type=${preferredType}`;
+  return apiGet(url);
+}
+
+async function fetchAnimeDetail(slug) {
+  return apiGet(`/anime/${slug}`);
+}
+
+async function fetchEpisodes(animeId) {
+  return apiGet(`/episodes/${animeId}`);
+}
+
+// ============================================================
+// PLAYER
+// ============================================================
+function loadPlayer(m3u8Url, subtitles = []) {
+  const video = document.getElementById('video');
+  
+  // Cleanup old player
+  if (currentPlayer) {
+    currentPlayer.destroy();
+    currentPlayer = null;
+  }
+  
+  // Show loading
+  const loading = document.getElementById('playerLoading');
+  const error = document.getElementById('playerError');
+  if (loading) loading.style.display = 'flex';
+  if (error) error.style.display = 'none';
+  
+  if (Hls.isSupported()) {
+    currentPlayer = new Hls({
+      enableWorker: true,
+      lowLatencyMode: false,
+      backBuffer: 90,
+    });
+    currentPlayer.loadSource(m3u8Url);
+    currentPlayer.attachMedia(video);
+    
+    currentPlayer.on(Hls.Events.MANIFEST_PARSED, () => {
+      if (loading) loading.style.display = 'none';
+      video.play().catch(() => {});  // autoplay might be blocked
+    });
+    
+    currentPlayer.on(Hls.Events.ERROR, (event, data) => {
+      if (data.fatal) {
+        console.error('HLS fatal error:', data);
+        if (loading) loading.style.display = 'none';
+        if (error) {
+          error.style.display = 'flex';
+          error.querySelector('.error-msg').textContent = 'Stream failed to load. Try another server.';
+        }
+        // Auto-try next server
+        tryNextServer();
+      }
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari native HLS
+    video.src = m3u8Url;
+    video.addEventListener('loadedmetadata', () => {
+      if (loading) loading.style.display = 'none';
+      video.play().catch(() => {});
+    });
+  } else {
+    if (loading) loading.style.display = 'none';
+    if (error) {
+      error.style.display = 'flex';
+      error.querySelector('.error-msg').textContent = 'HLS not supported in this browser.';
+    }
+  }
+  
+  // Load subtitles (VTT)
+  // Note: HLS.js can handle embedded subtitles, but for external VTTs we'd add text tracks
+  // For now we rely on HLS.js's built-in subtitle handling
+}
+
+function tryNextServer() {
+  if (!allServers.length) return;
+  const currentIdx = allServers.findIndex(s => s.link_id === currentServerId);
+  if (currentIdx === -1 || currentIdx === allServers.length - 1) return;
+  
+  const next = allServers[currentIdx + 1];
+  console.log('Trying next server:', next.name);
+  selectServer(next);
+}
+
+// ============================================================
+// UI RENDERING
+// ============================================================
+function renderWatchPage(data) {
+  const anime = data.anime;
+  const episode = data.episode;
+  const servers = data.all_servers || [];
+  const stream = data.stream || {};
+  allServers = servers;
+  
+  // Split servers by type (we'll treat megaplay.buzz providers as HLS, vidtube as EMBED)
+  const hlsServers = servers.filter(s => !s.name.includes('VidPlay'));
+  const embedServers = servers.filter(s => s.name.includes('VidPlay'));
+  
+  return `
+    <div class="watch-page">
+      <div class="player-section">
+        <div class="player-wrap">
+          <video id="video" controls playsinline></video>
+          <div class="player-loading" id="playerLoading">
+            <div class="spinner"></div>
+            <p>Loading stream...</p>
+          </div>
+          <div class="player-error" id="playerError">
+            <p style="font-size: 18px; font-weight: 600;">⚠️ Stream Error</p>
+            <p class="error-msg" style="color: var(--text-2); font-size: 14px;"></p>
+          </div>
+        </div>
+        
+        <div class="episode-info">
+          <div class="you-are-watching">YOU ARE WATCHING</div>
+          <h1 class="episode-title">${escapeHtml(anime.title)} - Episode ${episode.number}</h1>
+          <p class="episode-helper">
+            If the current server doesn't work, feel free to try the other available servers.
+          </p>
+          <div class="current-server-badge">
+            <span style="font-size: 14px;">🖥️</span>
+            <span class="label">Current Server</span>
+            <span class="sep">/</span>
+            <span class="name" id="currentServerName">Loading...</span>
+          </div>
+        </div>
+      </div>
+      
+      <aside class="server-panel">
+        <div class="lang-toggle">
+          <button class="lang-btn ${currentLang === 'sub' ? 'active' : ''}" onclick="switchLang('sub')">
+            📝 Sub
+          </button>
+          <button class="lang-btn ${currentLang === 'dub' ? 'active' : ''}" onclick="switchLang('dub')">
+            🎙️ Dub
+          </button>
+        </div>
+        
+        ${hlsServers.length > 0 ? `
+          <div class="server-section">
+            <div class="section-header">
+              <span class="section-icon">⚡</span>
+              <span class="section-title hls">HLS</span>
+            </div>
+            <div class="server-grid">
+              ${hlsServers.map(s => `
+                <button class="server-btn" data-link-id="${s.link_id}" onclick="selectServer(${JSON.stringify(s).replace(/"/g, '&quot;')})">
+                  ${prettyName(s.name)}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        
+        ${embedServers.length > 0 ? `
+          <div class="server-section">
+            <div class="section-header">
+              <span class="section-icon">🌐</span>
+              <span class="section-title embed">EMBED</span>
+            </div>
+            <div class="server-grid">
+              ${embedServers.map(s => `
+                <button class="server-btn" data-link-id="${s.link_id}" onclick="selectServer(${JSON.stringify(s).replace(/"/g, '&quot;')})">
+                  ${prettyName(s.name)}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+        
+        <p class="panel-footer">Select another server if playback fails.</p>
+      </aside>
+    </div>
+    
+    <div class="episodes-section">
+      <div class="episodes-header">
+        <h2>📺 Episodes</h2>
+      </div>
+      <div class="episodes-grid" id="episodesGrid">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+async function selectServer(server) {
+  if (!server || !server.link_id) return;
+  
+  // Don't reload if same server
+  if (currentServerId === server.link_id) return;
+  currentServerId = server.link_id;
+  
+  // Update UI: mark active button
+  document.querySelectorAll('.server-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.dataset.linkId === server.link_id) {
+      btn.classList.add('active');
+      btn.classList.add('loading');
+    }
+  });
+  
+  // Update current server name badge
+  const nameEl = document.getElementById('currentServerName');
+  if (nameEl) nameEl.textContent = prettyName(server.name);
+  
+  try {
+    // Get m3u8 from API
+    const stream = await apiGet(`/m3u8/${server.link_id}`);
+    if (stream.m3u8_url) {
+      loadPlayer(stream.m3u8_url, stream.subtitles || []);
+      showToast(`✅ Playing via ${prettyName(server.name)}`, 'success');
+    } else {
+      throw new Error('No m3u8 URL in response');
+    }
+  } catch (e) {
+    console.error('Failed to load server:', e);
+    showToast(`❌ ${prettyName(server.name)} failed. Trying next...`, 'error');
+    tryNextServer();
+  } finally {
+    document.querySelectorAll('.server-btn.loading').forEach(btn => btn.classList.remove('loading'));
+  }
+}
+
+async function switchLang(lang) {
+  if (lang === currentLang) return;
+  currentLang = lang;
+  
+  // Re-fetch with new language preference
+  if (currentAnimeSlug && currentEpisode) {
+    await loadWatchPage(currentAnimeSlug, currentEpisode, lang);
+  }
+}
+
+async function loadWatchPage(slug, episode, preferredType = currentLang) {
+  currentAnimeSlug = slug;
+  currentEpisode = episode;
+  currentLang = preferredType;
+  
+  // Show loading
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-loader">
+      <div class="spinner"></div>
+      <p>Loading ${slug} episode ${episode}...</p>
+    </div>
+  `;
+  
+  try {
+    const data = await fetchFullPipeline(slug, episode, preferredType);
+    document.getElementById('pageContent').innerHTML = renderWatchPage(data);
+    
+    // Auto-select first server (the API already returns them sorted by priority)
+    if (data.all_servers && data.all_servers.length > 0) {
+      selectServer(data.all_servers[0]);
+    }
+    
+    // Load episode list
+    if (data.anime && data.anime.anime_id) {
+      loadEpisodesList(data.anime.anime_id, slug, episode);
+    }
+    
+    // Update page title
+    document.title = `${data.anime.title} Episode ${episode} - LuffyTV`;
+    
+  } catch (e) {
+    document.getElementById('pageContent').innerHTML = `
+      <div class="page-loader">
+        <p style="font-size: 18px; color: var(--accent);">❌ Failed to load</p>
+        <p style="color: var(--text-2); font-size: 14px;">${escapeHtml(e.message)}</p>
+        <p style="color: var(--text-3); font-size: 13px; margin-top: 16px;">
+          Make sure the API is reachable at: ${API_BASE}
+        </p>
+      </div>
+    `;
+  }
+}
+
+async function loadEpisodesList(animeId, slug, currentEp) {
+  const grid = document.getElementById('episodesGrid');
+  if (!grid) return;
+  
+  try {
+    const data = await fetchEpisodes(animeId);
+    episodesList = data.episodes || [];
+    
+    if (episodesList.length === 0) {
+      grid.innerHTML = '<p style="color: var(--text-3); grid-column: 1/-1;">No episodes found</p>';
+      return;
+    }
+    
+    grid.innerHTML = episodesList.map(ep => `
+      <a href="/watch/${slug}/${ep.number}" class="episode-btn ${parseInt(ep.number) === currentEp ? 'active' : ''}">
+        ${ep.number}
+      </a>
+    `).join('');
+  } catch (e) {
+    grid.innerHTML = '<p style="color: var(--text-3); grid-column: 1/-1;">Failed to load episodes</p>';
+  }
+}
+
+// ============================================================
+// HOME PAGE
+// ============================================================
+async function renderHomePage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div style="text-align: center; padding: 60px 20px;">
+      <h1 style="font-size: 48px; font-weight: 800; margin-bottom: 16px;
+                 background: linear-gradient(135deg, var(--accent), var(--purple));
+                 -webkit-background-clip: text; background-clip: text;
+                 -webkit-text-fill-color: transparent;">
+        🏴‍☠️ LuffyTV
+      </h1>
+      <p style="color: var(--text-2); font-size: 18px; margin-bottom: 32px;">
+        Watch anime free — ad-free, no signup, HD quality.
+      </p>
+      <div style="max-width: 600px; margin: 0 auto;">
+        <input class="search-box" id="homeSearch" placeholder="Search for anime..." 
+               style="width: 100%; padding: 14px 20px; font-size: 16px;"
+               onkeypress="if(event.key==='Enter') doSearch(this.value)" />
+        <p style="color: var(--text-3); font-size: 13px; margin-top: 24px;">
+          Try: <a href="/watch/bleach-yaa9n/1" style="color: var(--accent);">Bleach Ep 1</a> · 
+          <a href="/watch/demon-slayer-kimetsu-no-yaiba-rzepv/1" style="color: var(--accent);">Demon Slayer Ep 1</a> ·
+          <a href="/watch/jujutsu-kaisen-tv-8ssye/1" style="color: var(--accent);">Jujutsu Kaisen Ep 1</a>
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+async function doSearch(query) {
+  if (!query.trim()) return;
+  try {
+    const results = await apiGet(`/search?q=${encodeURIComponent(query)}`);
+    const grid = document.getElementById('searchResults');
+    if (grid) {
+      grid.innerHTML = results.anime.map(a => `
+        <a href="/watch/${a.slug}-${a.id}/1" class="anime-card">
+          <img src="${a.image}" alt="${escapeHtml(a.title)}" />
+          <div class="anime-title">${escapeHtml(a.title)}</div>
+        </a>
+      `).join('');
+    }
+  } catch (e) {
+    showToast('Search failed', 'error');
+  }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer = null;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  const route = getRoute();
+  
+  if (route.type === 'watch') {
+    await loadWatchPage(route.slug, route.episode);
+  } else {
+    await renderHomePage();
+  }
+  
+  // Search handler
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && searchInput.value.trim()) {
+        window.location.href = `/?q=${encodeURIComponent(searchInput.value)}`;
+      }
+    });
+  }
+}
+
+// Use history.pushState for SPA navigation
+window.addEventListener('popstate', init);
+init();
+</script>
+</body>
+</html>
